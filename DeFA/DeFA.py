@@ -13,8 +13,12 @@ model.eval()
 midas_transforms = torch.hub.load("intel-isl/MiDaS", "transforms", trust_repo=True)
 transform = midas_transforms.dpt_transform
 
+
+
+PATH_VIDEO = r"D:\Storeage-1\Main\ModuleI\Video\know.mp4"
+
 # Open video
-cap = cv2.VideoCapture(r"D:\Storeage-1\Main\ML-Model\data_set\udy.mp4")
+cap = cv2.VideoCapture(PATH_VIDEO)
 
 while cap.isOpened():
     ret, frame = cap.read()
