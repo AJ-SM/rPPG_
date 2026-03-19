@@ -32,12 +32,12 @@ def createVideoBatchOfFive(path,size=5):
 
 
 # --- HOW TO USE IT ---
-video_file = r"D:\Storeage-1\Main\ModuleI\Video\real_client001_android_SD_scene01.mp4"
+# video_file = r"D:\Storeage-1\Main\ModuleI\Video\real_client001_android_SD_scene01.mp4"
 
-for tensor_6ch in createVideoBatchOfFive(video_file):
-    # tensor_6ch is your (256, 256, 6) input
-    # Now you can send 'mid_frame' to your WSL Hook to get the (32, 32) label!
-    print(f"Generated input tensor shape: {len(tensor_6ch)}")
+# for tensor_6ch in createVideoBatchOfFive(video_file):
+#     # tensor_6ch is your (256, 256, 6) input
+#     # Now you can send 'mid_frame' to your WSL Hook to get the (32, 32) label!
+#     print(f"Generated input tensor shape: {len(tensor_6ch)}")
     
 
 

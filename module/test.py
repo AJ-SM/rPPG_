@@ -9,10 +9,11 @@ from ImgtorPPG import   process_rppg_pipeline   # your file name
 
 
 VIDEO_PATH = r"D:\Storeage-1\Main\ModuleI\Video\know.mp4"
-MODEL_PATH = r"D:\Storeage-1\Main\ModuleI\reqModels\face_landmarker.task"
 
 
-def extract_data_from_video(video_path, model_path):
+
+def extract_data_from_video(video_path):
+    model_path =  r"D:\Storeage-1\Main\ModuleI\reqModels\face_landmarker.task"
 
     cap = cv.VideoCapture(video_path)
 
@@ -97,7 +98,7 @@ def extract_data_from_video(video_path, model_path):
 
 frames, masks, embeddings, fps = extract_data_from_video(
     VIDEO_PATH,
-    MODEL_PATH
+    
 )
 
 output = process_rppg_pipeline(
