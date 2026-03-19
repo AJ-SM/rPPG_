@@ -1,4 +1,3 @@
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -7,8 +6,7 @@ import torch.nn.functional as F
 
 class WoffMan(nn.Module):
 
-    def __init__(self,input_dim):
-
+    def __init__(self, input_dim):
         super(WoffMan,self).__init__()
 
         self.lstm = nn.LSTM(
@@ -22,9 +20,10 @@ class WoffMan(nn.Module):
 
 
     def forward(self,x):
+        # x: (B, T, input_dim)
 
-        out,_ = self.lstm(x)
+        out,_ = self.lstm(x)              # (B, T, 100)
 
-        rppg = self.fc(out)
+        rppg = torch.tanh(self.fc(out))  # (B, T, 1)
 
         return rppg

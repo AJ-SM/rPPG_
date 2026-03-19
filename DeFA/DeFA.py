@@ -1,63 +1,25 @@
-import torch
 import cv2
+import torch
 import numpy as np
+from 3DDFA_V2 import TDDFA
+from utils.depth import depth as render_depth
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+# 1. Initialize the DeFA (3DDFA) model
+config = 'configs/mb1_120x120.yml' # MobileNet backbone for speed
+tddfa = TDDFA(gpu_mode=True, config=config)
 
-# Load MiDaS model
-model = torch.hub.load("intel-isl/MiDaS", "MiDaS_small", trust_repo=True)
-model.to(device)
-model.eval()
+def generate_defa_depth(image_path):
+    img = cv2.imread(image_path)
 
-# Load transforms
-midas_transforms = torch.hub.load("intel-isl/MiDaS", "transforms", trust_repo=True)
-transform = midas_transforms.dpt_transform
-
-
-
-PATH_VIDEO = r"D:\Storeage-1\Main\ModuleI\Video\know.mp4"
-
-# Open video
-cap = cv2.VideoCapture(PATH_VIDEO)
-
-while cap.isOpened():
-    ret, frame = cap.read()
-    if not ret:
-        break
-
-    # Convert BGR -> RGB
-    img = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
-    # Apply transform
-    input_batch = transform(img).to(device)
-
-    # Depth prediction
-    with torch.no_grad():
-        prediction = model(input_batch)
-
-        prediction = torch.nn.functional.interpolate(
-            prediction.unsqueeze(1),
-            size=img.shape[:2],
-            mode="bicubic",
-            align_corners=False,
-        ).squeeze()
-
-    depth = prediction.cpu().numpy()
-
-    # Normalize depth for visualization1
-    depth = depth.astype(np.uint8)
-
-    # Apply colormap
-    depth_colormap = cv2.applyColorMap(depth, cv2.COLORMAP_MAGMA)
-    # depth_colormap = (depth_colormap>120).astype(int)
-    print( depth_colormap.shape)
-
-    # Show results
-    cv2.imshow("Original", frame)
-    cv2.imshow("Depth", depth_colormap)
-
-    if cv2.waitKey(1) & 0xFF == ord("q"):
-        break
-
-cap.release()
-cv2.destroyAllWindows()
+    boxes = face_boxes(img) 
+    param_lst, roi_box_lst = tddfa(img, boxes)
+    
+    
+    ver_lst = tddfa.recon_vers(param_lst, roi_box_lst, dense_flag=True)
+    
+    raw_depth = render_depth(img, ver_lst, tddfa.tri, show_flag=False)
+    
+    normalized_depth = (raw_depth - raw_depth.min()) / (raw_depth.max() - raw_depth.min() + 1e-7)
+    final_depth = cv2.resize(normalized_depth, (32, 32))
+    
+    return final_depth
