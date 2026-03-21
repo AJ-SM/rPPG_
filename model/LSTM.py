@@ -20,7 +20,7 @@ class WoffMan(nn.Module):
 
 
     def forward(self,x):
-        # x: (B, T, input_dim)
+        # x: (B, T, input_dim)qq
 
         out,_ = self.lstm(x)              # (B, T, 100)
 

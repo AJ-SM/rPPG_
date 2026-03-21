@@ -35,12 +35,12 @@ class Karnot(nn.Module):
         # After Concatenation 
 
         # Feature branch 
-        self.Fconv1 = nn.Conv2d(384,128,3,padding=1)
+        self.Fconv1 = nn.Conv2d(452,128,3,padding=1)
         self.Fconv2 = nn.Conv2d(128,3,3,padding=1)
         self.Fconv3 = nn.Conv2d(3,1,3,padding=1)
 
         # Depth branch 
-        self.DEconv1 = nn.Conv2d(384,128,3,padding=1)
+        self.DEconv1 = nn.Conv2d(452,128,3,padding=1)
         self.DEconv2 = nn.Conv2d(128,64,3,padding=1)
         self.DEconv3 = nn.Conv2d(64,1,3,padding=1)
 
