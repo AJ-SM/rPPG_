@@ -34,7 +34,7 @@ PATH_Attack = r"D:\Storeage-1\Main\ML-Model\data_set\DS\vvx\MSU-MFSD-Publish\sce
 PATH_Real = r"D:\Storeage-1\Main\ML-Model\data_set\DS\vvx\MSU-MFSD-Publish\scene01\real"
 TEMP_IMG_PATH = r"D:\wsl_bridge_temp.jpg" 
 
-epochs = 5
+epochs = 2
 lr = 1e-4
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")

@@ -88,7 +88,7 @@ def test_video(video_path, cnn_path, lstm_path, device):
 
 # --- RUN TEST ---
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-VIDEO_TO_TEST = r"D:\Storeage-1\Main\ModuleI\Video\realbaddi.mp4"
+VIDEO_TO_TEST = r"D:\Storeage-1\Main\ModuleI\Video\fkl.mp4"
 CNN_WEIGHTS = r"D:\Storeage-1\Main\ModuleI\final_models\karnot_cnn_final.pth"
 LSTM_WEIGHTS = r"D:\Storeage-1\Main\ModuleI\final_models\woffman_lstm_final.pth"
 
