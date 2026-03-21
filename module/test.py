@@ -8,7 +8,7 @@ from mediapipe.tasks.python import vision
 # from ImgtorPPG import   process_rppg_pipeline   # your file name
 
 
-VIDEO_PATH = r"D:\Storeage-1\Main\ModuleI\Video\know.mp4"
+VIDEO_PATH = r"D:\Storeage-1\Main\ModuleI\Video\rko.mp4"
 
 
 

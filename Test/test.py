@@ -69,9 +69,9 @@ def test_video(video_path, cnn_path, lstm_path, device):
     # We average the temporal pulse scores. 
     # Real faces typically produce consistent, non-zero pulse waves.
     avg_score = np.mean(np.abs(scores))
-    threshold = 0.7 # You can tune this based on your validation results
+    threshold = 0.020 # You can tune this based on your validation results
     
-    label = "REAL (LIVE)" if avg_score > threshold else "SPOOF (ATTACK)"
+    label = "REAL (LIVE)" if avg_score >= threshold else "SPOOF (ATTACK)"
     print(f"\nResult: {label}")
     print(f"Confidence Score: {avg_score:.4f}")
 
@@ -88,7 +88,7 @@ def test_video(video_path, cnn_path, lstm_path, device):
 
 # --- RUN TEST ---
 DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-VIDEO_TO_TEST = r"D:\Storeage-1\Main\ModuleI\Video\rko.mp4"
+VIDEO_TO_TEST = r"D:\Storeage-1\Main\ModuleI\Video\realbaddi.mp4"
 CNN_WEIGHTS = r"D:\Storeage-1\Main\ModuleI\final_models\karnot_cnn_final.pth"
 LSTM_WEIGHTS = r"D:\Storeage-1\Main\ModuleI\final_models\woffman_lstm_final.pth"
 

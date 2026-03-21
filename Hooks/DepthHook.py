@@ -36,7 +36,6 @@ def get_depth_from_wsl(windows_path):
 # --- EXECUTE TEST ---
 img_path = r"D:\Storeage-1\Main\ML-Model\examps\RDJ.jpg"
 depth = get_depth_from_wsl(img_path)
-print(depth.shape)
 # if os.path.exists(img_path):
     
 #     if depth is not None and not np.all(depth == 0):

@@ -58,3 +58,7 @@ def extract_frames_embeddings(video_path, model_path):
     cap.release()
 
     return frames, embeddings
+
+
+
+# extract_frames_embeddings(r"D:\Storeage-1\Main\ModuleI\Video\nbaddi.mp4",r"D:\Storeage-1\Main\ModuleI\reqModels\face_landmarker.task")
