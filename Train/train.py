@@ -34,8 +34,9 @@ PATH_Attack = r"D:\Storeage-1\Main\ML-Model\data_set\DS\vvx\MSU-MFSD-Publish\sce
 PATH_Real = r"D:\Storeage-1\Main\ML-Model\data_set\DS\vvx\MSU-MFSD-Publish\scene01\real"
 TEMP_IMG_PATH = r"D:\wsl_bridge_temp.jpg" 
 
-epochs = 2
+epochs = 5
 lr = 1e-4
+lamb = 1
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 cnn_model = Karnot().to(device).float()
@@ -62,10 +63,12 @@ for epoch in range(epochs):
     for inputTensor, mid_pixels in createVideoBatchOfFive(videoPath):
         if status:
             cv2.imwrite(TEMP_IMG_PATH, mid_pixels)
+            print(" --- Real Image ---")
             target_depth_np = get_depth_from_wsl(TEMP_IMG_PATH)
             if target_depth_np is None: continue
             target_pulse = torch.tensor([gt_pulse_full[min(idx + 2, len(gt_pulse_full)-1)]], dtype=torch.float32).to(device)
         else:
+            print(" --- Fake Image ---")
             target_depth_np = np.zeros((32, 32), dtype=np.float32)
             target_pulse = torch.tensor([0.0]).to(device).float()
 
@@ -89,10 +92,12 @@ for epoch in range(epochs):
 
         # --- LOSS & BACKWARD ---
         l_depth = loss_depth(pred_depth, target_depth_pt)
+        print("Depth Loss : ", l_depth)
         l_rppg = loss_rppg(pred_pulse.view(-1), target_pulse.view(-1))
+        print("LSTM Loss : ", l_rppg)
         
         # Backpropagation updates both CNN and RNN parts in an end-to-end manner [cite: 230]
-        total_loss = l_depth + l_rppg
+        total_loss = l_depth*lamb + l_rppg
         total_loss.backward()
         optimizer.step()
         idx += 1

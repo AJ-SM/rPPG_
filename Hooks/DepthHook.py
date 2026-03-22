@@ -37,17 +37,17 @@ def get_depth_from_wsl(windows_path):
         print(f"Reconstruction Error: {e}")
         return None
 
-# --- TEST ---
-img_path = r"D:\Storeage-1\Main\ModuleI\dataSet\raw\ImposterRaw\0006\0006_00_00_01_30.jpg"
+# # --- TEST ---
+# img_path = r"D:\Storeage-1\Main\ModuleI\dataSet\raw\ImposterRaw\0006\0006_00_00_01_30.jpg"
 
-if os.path.exists(img_path):
-    depth = get_depth_from_wsl(img_path)
+# if os.path.exists(img_path):
+#     depth = get_depth_from_wsl(img_path)
     
-    if depth is not None:
-        print("Success! Displaying Depth Map...")
-        plt.imshow(depth, cmap='jet')
-        plt.title("32x32 Face Depth (Live)")
-        plt.colorbar()
-        plt.show()
-else:
-    print(f"Windows cannot find file: {img_path}")
+#     if depth is not None:
+#         print("Success! Displaying Depth Map...")
+#         plt.imshow(depth, cmap='jet')
+#         plt.title("32x32 Face Depth (Live)")
+#         plt.colorbar()
+#         plt.show()
+# else:
+#     print(f"Windows cannot find file: {img_path}")
