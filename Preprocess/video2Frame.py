@@ -1,44 +1,46 @@
-
 import numpy as np
-import cv2 
-from collections import deque 
+import cv2
+from collections import deque
 
+def createVideoBatchOfFive(path, size=5, frame_skip=2):
 
-def createVideoBatchOfFive(path,size=5):
     cap = cv2.VideoCapture(path)
     fw = deque(maxlen=size)
+    frame_count = 0
+
     while cap.isOpened():
-        ret,frame = cap.read()
-        if not ret :
-            break 
-        reFrame = cv2.resize(frame,(256,256))
-        fw.append(reFrame)
+        ret, frame = cap.read()
+        if not ret:
+            break
 
-        if len(fw)==size:
-            batch = list(fw)
+        frame_count += 1
+        if frame_count % frame_skip != 0:
+            continue
 
-            mid_frm = batch[2]
+        # Resize
+        reFrame = cv2.resize(frame, (256, 256))
 
-            mid_rgb = cv2.cvtColor(mid_frm,cv2.COLOR_BGR2RGB)
-            mid_rgb_nrm = mid_rgb.astype(np.float32)/255.0
+        # RGB + HSV
+        rgb = cv2.cvtColor(reFrame, cv2.COLOR_BGR2RGB).astype(np.float32) / 255.0
+        hsv = cv2.cvtColor(reFrame, cv2.COLOR_BGR2HSV).astype(np.float32) / 255.0
 
-            mid_hsv = cv2.cvtColor(mid_frm,cv2.COLOR_BGR2HSV)
-            mid_hsv_nrm = mid_hsv.astype(np.float32)/255.0
+        combined_6ch = np.concatenate([rgb, hsv], axis=2)
 
-            input_tensor = np.concatenate([mid_rgb_nrm,mid_hsv_nrm],axis=2)
+        fw.append((combined_6ch, reFrame))
 
-            yield input_tensor,mid_frm
+        if len(fw) == size:
+            batch_data = list(fw)
+
+            sequence_tensor = np.stack(
+                [item[0] for item in batch_data], axis=0
+            )
+
+            sequence_tensor = np.ascontiguousarray(sequence_tensor)
+
+            mid_frame = batch_data[size // 2][1]
+
+            yield sequence_tensor, mid_frame
+
+            fw.clear()  # 🔥 remove overlap (training)
+
     cap.release()
-
-
-# --- HOW TO USE IT ---
-# video_file = r"D:\Storeage-1\Main\ModuleI\Video\real_client001_android_SD_scene01.mp4"
-
-# for tensor_6ch in createVideoBatchOfFive(video_file):
-#     # tensor_6ch is your (256, 256, 6) input
-#     # Now you can send 'mid_frame' to your WSL Hook to get the (32, 32) label!
-#     print(f"Generated input tensor shape: {len(tensor_6ch)}")
-    
-
-
-

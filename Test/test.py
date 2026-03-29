@@ -2,94 +2,151 @@ import torch
 import torch.nn.functional as F
 import cv2
 import numpy as np
+import os
 from collections import deque
-import matplotlib.pyplot as plt
-            
-# Import your model structures
+
 from model.CNN import Karnot
 from model.LSTM import WoffMan
 
+
+# ---------------- MASKING ---------------- #
+def non_rigid_registration(feature_map, pred_depth, threshold=0.1):
+    mask = (pred_depth > threshold).float()
+    return feature_map * mask
+
+
+# ---------------- DEPTH VISUALIZATION ---------------- #
+def visualize_depth(depth_tensor):
+    """
+    depth_tensor: (1, 32, 32)
+    """
+    depth = depth_tensor.squeeze().cpu().numpy()
+
+    # Normalize to 0–255
+    depth = (depth - depth.min()) / (depth.max() - depth.min() + 1e-6)
+    depth = (depth * 255).astype(np.uint8)
+
+    # Resize for display
+    depth = cv2.resize(depth, (256, 256))
+
+    # Apply colormap
+    depth_colored = cv2.applyColorMap(depth, cv2.COLORMAP_JET)
+
+    return depth_colored
+
+
+# ---------------- TEST FUNCTION ---------------- #
 def test_video(video_path, cnn_path, lstm_path, device):
-    # 1. Initialize and Load Models
+
+    # MUST match training
     cnn = Karnot().to(device).float()
-    lstm = WoffMan(input_dim=1).to(device).float()
-    
-    cnn.load_state_dict(torch.load(cnn_path, map_location=device))
-    lstm.load_state_dict(torch.load(lstm_path, map_location=device))
-    
+    lstm = WoffMan(input_dim=128, fs=35).to(device).float()
+
+    # -------- LOAD MODELS -------- #
+    try:
+        cnn_ckpt = torch.load(cnn_path, map_location=device)
+
+        if isinstance(cnn_ckpt, dict) and 'model_state_dict' in cnn_ckpt:
+            cnn.load_state_dict(cnn_ckpt['model_state_dict'])
+        else:
+            cnn.load_state_dict(cnn_ckpt)
+
+        lstm.load_state_dict(torch.load(lstm_path, map_location=device))
+
+    except Exception as e:
+        print(f"Error loading models: {e}")
+        return
+
     cnn.eval()
     lstm.eval()
 
     cap = cv2.VideoCapture(video_path)
     fw = deque(maxlen=5)
-    
-    scores = []
-    depth_maps = []
+
+    final_scores = []
 
     print(f"Analyzing Video: {video_path}...")
 
-    with torch.no_grad(): # Disable gradient calculation for speed
+    with torch.no_grad():
         while cap.isOpened():
             ret, frame = cap.read()
-            if not ret: break
+            if not ret:
+                break
 
-            # Pre-process exactly like training
+            # -------- PREPROCESS -------- #
             reFrame = cv2.resize(frame, (256, 256))
-            fw.append(reFrame)
+
+            rgb = cv2.cvtColor(reFrame, cv2.COLOR_BGR2RGB).astype(np.float32) / 255.0
+            hsv = cv2.cvtColor(reFrame, cv2.COLOR_BGR2HSV).astype(np.float32) / 255.0
+
+            combined = np.concatenate([rgb, hsv], axis=2).copy()
+
+            fw.append(torch.from_numpy(combined).permute(2, 0, 1))
 
             if len(fw) == 5:
-                batch = list(fw)
-                mid_frm = batch[2]
 
-                # Create RGB + HSV 6-channel input
-                mid_rgb = cv2.cvtColor(mid_frm, cv2.COLOR_BGR2RGB).astype(np.float32)/255.0
-                mid_hsv = cv2.cvtColor(mid_frm, cv2.COLOR_BGR2HSV).astype(np.float32)/255.0
-                input_tensor = np.concatenate([mid_rgb, mid_hsv], axis=2)
+                input_seq = torch.stack(list(fw)).unsqueeze(0).to(device).float()
+                B, T, C, H, W = input_seq.shape
 
-                # Convert to Torch Tensor (1, 6, 256, 256)
-                input_pt = torch.from_numpy(input_tensor).permute(2, 0, 1).unsqueeze(0).to(device).float()
+                # -------- CNN -------- #
+                pred_depths, raw_features = cnn(input_seq.squeeze(0))
+                # pred_depths: (T,1,32,32)
+                # raw_features: (T,128,32,32)
 
-                # Forward Pass
-                pred_depth, raw_features = cnn(input_pt)
-                pooled = F.adaptive_avg_pool2d(raw_features, (1, 1)).view(1, 1, -1)
-                pred_pulse = lstm(pooled)
+                # -------- MASKING -------- #
+                registered_features = non_rigid_registration(raw_features, pred_depths)
 
-                # Collect results
-                # In the paper, a 'Live' face has a pulse variance and 3D shape
-                # Here we take the absolute value of the pulse prediction as a confidence score
-                print(pred_pulse.item())
-                scores.append(pred_pulse.item())
-                
-                if len(depth_maps) < 1: # Save one depth map for visual check
-                    depth_maps.append(pred_depth[0, 0].cpu().numpy())
+                # -------- POOLING -------- #
+                pooled = F.adaptive_avg_pool2d(
+                    registered_features, (1, 1)
+                ).view(1, T, -1)  # (1,5,128)
+
+                # -------- LSTM -------- #
+                pred_f = lstm(pooled)
+
+                # -------- SCORE -------- #
+                mid = T // 2
+
+                depth_score = torch.norm(pred_depths[mid])
+                rppg_score = torch.norm(pred_f)
+
+                score = depth_score + 0.015 * rppg_score
+                final_scores.append(score.item())
+
+                # -------- SHOW DEPTH MAP -------- #
+                depth_img = visualize_depth(pred_depths[mid])
+
+                combined_display = np.hstack([reFrame, depth_img])
+
+                cv2.imshow("RGB Frame | Depth Map", combined_display)
+
+                if cv2.waitKey(1) & 0xFF == 27:
+                    break
 
     cap.release()
+    cv2.destroyAllWindows()
 
-    # --- FINAL DECISION LOGIC ---
-    # We average the temporal pulse scores. 
-    # Real faces typically produce consistent, non-zero pulse waves.
-    avg_score = np.mean(np.abs(scores))
-    threshold = 0.0030 # You can tune this based on your validation results
-    
-    label = "REAL (LIVE)" if avg_score >= threshold else "SPOOF (ATTACK)"   
-    print(f"\nResult: {label}")
-    print(f"Confidence Score: {avg_score:.4f}")
+    # -------- FINAL RESULT -------- #
+    if final_scores:
+        avg_score = np.mean(final_scores)
 
-    # Visual Verification
-    if depth_maps:
-        plt.subplot(1, 2, 1)
-        plt.title("Input Frame")
-        plt.imshow(cv2.cvtColor(reFrame, cv2.COLOR_BGR2RGB))
-        
-        plt.subplot(1, 2, 2)
-        plt.title("Predicted Depth")
-        plt.imshow(depth_maps[0], cmap='jet')
-        plt.show()
+        # ⚠️ tune threshold
+        result = "REAL (LIVE)" if avg_score > 2.0 else "SPOOF (ATTACK)"
 
-# --- RUN TEST ---
-DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-VIDEO_TO_TEST = r"D:\Storeage-1\Main\ModuleI\Video\akt.mp4"
-CNN_WEIGHTS = r"D:\Storeage-1\Main\ModuleI\final_models\karnot_cnn_final.pth"
-LSTM_WEIGHTS = r"D:\Storeage-1\Main\ModuleI\final_models\woffman_lstm_final.pth"
+        print(f"Result: {result} | Score: {avg_score:.4f}")
+    else:
+        print("No frames processed.")
 
-test_video(VIDEO_TO_TEST, CNN_WEIGHTS, LSTM_WEIGHTS, DEVICE)
+
+# ---------------- MAIN ---------------- #
+if __name__ == "__main__":
+    DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    VIDEO_PATH = r"D:\Storeage-1\Main\ModuleI\Video\0.mp4"
+    CNN_PATH = r"D:\Storeage-1\Main\ModuleI\checkpoint\cnn_epoch_150.pth"
+    LSTM_PATH = r"D:\Storeage-1\Main\ModuleI\checkpoint\rnn_epoch_150.pth"
+
+    if os.path.exists(VIDEO_PATH):
+        test_video(VIDEO_PATH, CNN_PATH, LSTM_PATH, DEVICE)
+    else:
+        print(f"Video file not found at {VIDEO_PATH}")

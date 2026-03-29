@@ -5,10 +5,10 @@ import numpy as np
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 
-from ImgtorPPG import   process_rppg_pipeline   # your file name
+# from ImgtorPPG import   process_rppg_pipeline   # your file name
 
 
-VIDEO_PATH = r"D:\Storeage-1\Main\ModuleI\Video\baddiprinted.mp4"
+# VIDEO_PATH = r"D:\Storeage-1\Main\ModuleI\Video\ros.mp4"
 
 
 
@@ -96,21 +96,21 @@ def extract_data_from_video(video_path):
     return frames, masks, embeddings, fps
 
 
-frames, masks, embeddings, fps = extract_data_from_video(
-    VIDEO_PATH,
+# frames, masks, embeddings, fps = extract_data_from_video(
+#     VIDEO_PATH,
     
-)
+# )
 
-output = process_rppg_pipeline(
-    frames,
-    masks,
-    embeddings,
-    fps
-)
+# output = process_rppg_pipeline(
+#     frames,
+#     masks,
+#     embeddings,
+#     fps
+# )
 
-print("Heart Rate Results")
-print("-------------------")
+# print("Heart Rate Results")
+# print("-------------------")
 
-for algo in output["results"]:
-    hr = output["results"][algo]["heart_rate"]
-    print(algo, ":", round(hr, 2), "BPM")
+# for algo in output["results"]:
+#     hr = output["results"][algo]["heart_rate"]
+#     print(algo, ":", round(hr, 2), "BPM")
