@@ -109,8 +109,10 @@ def test_video(video_path, cnn_path, lstm_path, device):
 
                 depth_score = torch.norm(pred_depths[mid])
                 rppg_score = torch.norm(pred_f)
+                print("Rppg Score : " ,rppg_score)
 
                 score = depth_score + 0.015 * rppg_score
+                print("Score : " ,score)
                 final_scores.append(score.item())
 
                 # -------- SHOW DEPTH MAP -------- #
@@ -142,9 +144,9 @@ def test_video(video_path, cnn_path, lstm_path, device):
 if __name__ == "__main__":
     DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    VIDEO_PATH = r"D:\Storeage-1\Main\ModuleI\Video\0.mp4"
-    CNN_PATH = r"D:\Storeage-1\Main\ModuleI\checkpoint\cnn_epoch_150.pth"
-    LSTM_PATH = r"D:\Storeage-1\Main\ModuleI\checkpoint\rnn_epoch_150.pth"
+    VIDEO_PATH = r"D:\Storeage-1\Main\ModuleI\Video\akt.mp4"
+    CNN_PATH = r"D:\Storeage-1\Main\ModuleI\checkpoint\cnn_epoch_10.pth"
+    LSTM_PATH = r"D:\Storeage-1\Main\ModuleI\checkpoint\rnn_epoch_10.pth"
 
     if os.path.exists(VIDEO_PATH):
         test_video(VIDEO_PATH, CNN_PATH, LSTM_PATH, DEVICE)
